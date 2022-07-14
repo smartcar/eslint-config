@@ -1,9 +1,12 @@
+dist: focal
+
 language:
   - node_js
 
 node_js:
+  - '18'
+  - '16'
   - '14'
-  - '12'
 
 before_install:
   - npm install -g npm@8.3.0
@@ -26,11 +29,12 @@ script:
   - npm test
   - npm run lint
   - sort-package-json --check
+  - prettier --check .
 
 deploy:
   provider: script
   skip_cleanup: true
   script: NPM_TOKEN=$GH_TOKEN semantic-release
   on:
-    node_js: '14'
+    node_js: '18'
     all_branches: true

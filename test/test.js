@@ -1,9 +1,10 @@
+/* eslint-disable n/global-require */
 'use strict';
 
-const { readdirSync } = require('fs');
-const { basename, extname, join } = require('path');
+const { readdirSync } = require('node:fs');
+const { basename, extname, join } = require('node:path');
 
-const { CLIEngine, ESLint } = require('eslint');
+const { ESLint } = require('eslint');
 const isPlainObj = require('is-plain-obj');
 const test = require('ava');
 const difference = require('lodash.difference');
@@ -12,7 +13,7 @@ const pkg = require('../package.json');
 
 const prettierRules = {
   ...require('eslint-config-prettier').rules,
-  ...require('eslint-config-prettier/unicorn').rules,
+  ...require('eslint-config-prettier/prettier').rules,
 };
 
 const configs = readdirSync('.')
@@ -40,34 +41,46 @@ configs.forEach(function ({ name, config }) {
   });
 
   test(`${name} - rule definitions`, t => {
-    const cli = new CLIEngine({
-      baseConfig: config,
-      useEslintrc: false,
-    });
-
-    cli.executeOnText('');
-
     const rules = {
       available: [],
       defined: Object.keys(config.rules).sort(),
     };
 
-    for (const [ruleName, rule] of cli.getRules()) {
-      if (rule.meta && rule.meta.deprecated) {
-        continue;
-      }
+    /**
+     * Adds rules defined by a plugin / code into the rules object above
+     *
+     * @param {Iterable<Pair<string, Rule>>} rulesEntries - iterable that produces 2
+     * element arrays where the first element is rule name and second is the rule itself
+     * e.g. the return value of Object.entries(rules)
+     * @param {string} [pluginName=''] - name of the plugin that defines these rules
+     */
+    const pushRules = function (rulesEntries, pluginName = '') {
+      for (let [ruleName, rule] of rulesEntries) {
+        if (rule.meta?.deprecated) {
+          continue;
+        }
 
-      /**
-       * All config files other than index won't define any of the core rules, so
-       * if we are testing a non-index config file we want to filter out any non-plugin
-       * provided rules
-       */
-      const PLUGIN_RULE_RE = /@?[\w-]+\//u;
-      if (name !== 'index' && !PLUGIN_RULE_RE.test(ruleName)) {
-        continue;
-      }
+        // plugins define the unprefixed rule name, so we need to add the prefix
+        if (pluginName) {
+          ruleName = `${pluginName}/${ruleName}`;
+        }
 
-      rules.available.push(ruleName);
+        rules.available.push(ruleName);
+      }
+    };
+
+    config.plugins.forEach(function (pluginName) {
+      const plugin = require(`eslint-plugin-${pluginName}`);
+
+      pushRules(Object.entries(plugin.rules), pluginName);
+    });
+
+    /*
+     * All config files other than index won't define any of the core rules, so
+     * if we are testing a non-index config file we don't want to add the core rules
+     */
+    if (name === 'index') {
+      pushRules(require('eslint/use-at-your-own-risk').builtinRules.entries());
     }
 
     t.deepEqual(
