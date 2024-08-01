@@ -14,7 +14,7 @@ module.exports = {
     es2017: true,
     es2020: true,
   },
-  extends: ['eslint:recommended', 'prettier', 'prettier/unicorn'],
+  extends: ['eslint:recommended', 'prettier'],
   parserOptions: {
     ecmaVersion: 2020,
   },
@@ -523,7 +523,6 @@ module.exports = {
     'jsdoc/empty-tags': 'error',
     'jsdoc/implements-on-classes': 'error',
     'jsdoc/match-description': 'off',
-    'jsdoc/newline-after-description': ['error', 'always'],
     'jsdoc/no-bad-blocks': 'error',
     'jsdoc/no-defaults': 'off',
     'jsdoc/no-types': 'off', // only needed if using TS
@@ -637,7 +636,7 @@ module.exports = {
     'sonarjs/max-switch-cases': ['error', 15],
     'sonarjs/no-collapsible-if': 'off', // too opinionated
     'sonarjs/no-collection-size-mischeck': 'error',
-    'sonarjs/no-duplicate-string': ['error', 4],
+    'sonarjs/no-duplicate-string': ['error', { 'threshold': 4 }],
     'sonarjs/no-duplicated-branches': 'error',
     'sonarjs/no-identical-functions': 'error',
     'sonarjs/no-inverted-boolean-check': 'error',
